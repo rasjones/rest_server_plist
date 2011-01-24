@@ -1,8 +1,17 @@
-; $Id$
+; $Id: rest_server_plist.info,v 1.1 2010/05/07 06:38:43 hugowetterberg Exp $
 name = REST Server plist Support
 description = Provides binary and xml plist support for the REST Server.
 package = Services - servers
 dependencies[] = rest_server
-dependencies[] = autoload
-core = 6.x
+core = 7.x
 php = 5.2
+files[] = lib/cfpropertylist/CFBinaryPropertyList.php
+files[] = lib/cfpropertylist/CFPropertyList.php
+files[] = lib/cfpropertylist/CFType.php
+files[] = lib/cfpropertylist/CFTypeDetector.php
+files[] = lib/cfpropertylist/IOException.php
+files[] = lib/cfpropertylist/PListException.php
+files[] = includes/ExtendedCFTypeDetector.inc
+files[] = includes/RESTServerPlistView.inc
+files[] = lib/phpseclib/BigInteger.php
+

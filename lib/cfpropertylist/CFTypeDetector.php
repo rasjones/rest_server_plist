@@ -24,15 +24,24 @@ class CFTypeDetector {
    * @var boolean
    */
   protected $suppressExceptions = false;
-  
+
+  /**
+   * name of a method that will be used for array to object conversations
+   * @var boolean
+   */
+  protected $objectToArrayMethod = false;
+
+
   /**
    * Create new CFTypeDetector
    * @param boolean $autoDicitionary if set to true all arrays will be converted to {@link CFDictionary}
    * @param boolean $suppressExceptions if set to true toCFType() will not throw any exceptions
+   * @param boolean $objectToArrayMethod if non-null, this method will be called on objects (if possible) to convert the object to an array
    */
-  public function __construct($autoDicitionary=false,$suppressExceptions=false) {
+  public function __construct($autoDicitionary=false,$suppressExceptions=false,$objectToArrayMethod=null) {
     $this->autoDicitionary = $autoDicitionary;
     $this->suppressExceptions = $suppressExceptions;
+    $this->objectToArrayMethod = $objectToArrayMethod;
   }
   
   /**
@@ -73,9 +82,7 @@ class CFTypeDetector {
    * If you work with large arrays and can live with all arrays evaluating to {@link CFDictionary}, 
    * feel free to set the appropriate flag.
    * <br /><b>Note:</b> If $value is an instance of CFType it is simply returned.
-   
    * <br /><b>Note:</b> If $value is neither a CFType, array, numeric, boolean nor string, it is omitted.
-   
    * @param mixed $value Value to convert to CFType
    * @param boolean $autoDictionary if true {@link CFArray}-detection is bypassed and arrays will be returned as {@link CFDictionary}.
    * @return CFType CFType based on guessed type
@@ -86,7 +93,26 @@ class CFTypeDetector {
       case $value instanceof CFType:
         return $value;
       break;
-      
+
+      case is_object($value):
+        // DateTime should be CFDate
+        if(class_exists( 'DateTime' ) && $value instanceof DateTime){
+          return new CFDate($value->getTimestamp());
+        }
+        
+        // convert possible objects to arrays, arrays will be arrays
+        if($this->objectToArrayMethod && is_callable(array($value, $this->objectToArrayMethod))){
+          $value = call_user_func( array( $value, $this->objectToArrayMethod ) );
+        }
+        
+        if(!is_array($value)){
+          if($this->suppressExceptions)
+            return $this->defaultValue();
+
+          throw new PListException('Could not determine CFType for object of type '. get_class($value));
+        }
+      /* break; omitted */
+
       case $value instanceof Iterator:
       case is_array($value):
         // test if $value is simple or associative array
@@ -119,14 +145,7 @@ class CFTypeDetector {
       case is_null($value):
         return new CFString();
       break;
-      
-      case is_object($value):
-        if( $this->suppressExceptions )
-          return $this->defaultValue();
 
-        throw new PListException('Could not determine CFType for object of type '. get_class($value));
-      break;
-      
       case is_resource($value):
         if( $this->suppressExceptions )
           return $this->defaultValue();
